@@ -16,13 +16,13 @@ const StockCard: React.FC<StockCardProps> = ({ symbol, price, alertPrice }) => {
       }`}
     >
       <h2 className="text-xl font-semibold">{symbol}</h2>
-      <p className="text-lg">Precio: ${price.toFixed(2)}</p>
+      <p className="text-lg">Price: ${price.toFixed(2)}</p>
       <p className="text-sm">
         {isAboveAlert
-          ? "🔔 Sobre la alerta"
+          ? "🔔 Over Alert"
           : alertPrice > 0
-            ? "📉 Bajo la alerta"
-            : "Sin alerta definida"}
+            ? "📉 Under Alert"
+            : "No Alert Defined"}
       </p>
     </div>
   );
