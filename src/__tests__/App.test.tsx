@@ -23,7 +23,7 @@ describe("App integration", () => {
     const button = screen.getByRole("button", { name: /add stock/i });
     fireEvent.click(button);
 
-    expect(screen.getByRole("heading", { name: "AAPL" })).toBeInTheDocument();
+    expect(screen.getByTestId("stock-title-AAPL")).toBeInTheDocument();
     expect(screen.getByText("Alert Price: $150.00")).toBeInTheDocument();
   });
 });

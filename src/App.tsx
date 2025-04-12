@@ -5,7 +5,17 @@ import StockChart from "./components/StockChart";
 import { useFinnhubSocket } from "./hooks/useFinnHubSocket";
 import { StockPoint } from "./types/stock";
 
-const AVAILABLE_SYMBOLS = ["AAPL", "MSFT", "GOOGL", "TSLA", "BINANCE:BTCUSDT"];
+const AVAILABLE_SYMBOLS = [
+  "AAPL",
+  "MSFT",
+  "GOOGL",
+  "TSLA",
+  "BINANCE:BTCUSDT",
+  "BINANCE:ETHUSDT",
+  "BINANCE:SOLUSDT",
+  "BINANCE:DOGEUSDT",
+  "BINANCE:AVAXUSDT",
+];
 
 function App() {
   const [watchedStocks, setWatchedStocks] = useState<
@@ -36,6 +46,27 @@ function App() {
       ];
     });
   }, []);
+
+  const totalValueHistory = useMemo(() => {
+    const timeToPrices: Record<number, number> = {};
+
+    watchedStocks.forEach((stock) => {
+      stock.priceHistory.forEach(({ time, price }) => {
+        if (!timeToPrices[time]) {
+          timeToPrices[time] = 0;
+        }
+        timeToPrices[time] += price;
+      });
+    });
+
+    return Object.entries(timeToPrices)
+      .map(([time, total]) => ({
+        time: Number(time),
+        price: total,
+        symbol: "TOTAL_VALUE",
+      }))
+      .sort((a, b) => a.time - b.time);
+  }, [watchedStocks]);
 
   const handleData = useCallback(
     (symbol: string, price: number, timestamp: number) => {
@@ -87,7 +118,7 @@ function App() {
         </div>
 
         <div className="flex-1">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="flex gap-4 overflow-x-auto sm:grid sm:grid-cols-2 md:grid-cols-3 sm:overflow-x-visible">
             {watchedStocks.map((stock) => (
               <StockCard
                 key={stock.symbol}
@@ -106,7 +137,13 @@ function App() {
           </div>
 
           <div className="mt-6">
-            <StockChart dataSet={chartData} symbol="All Added Stocks" />
+            <StockChart dataSet={chartData} />
+          </div>
+          <div className="mt-6">
+            <h2 className="text-lg font-semibold text-center">
+              📊 Total Stock Value
+            </h2>
+            <StockChart dataSet={totalValueHistory} showTotalOnly />
           </div>
         </div>
       </div>

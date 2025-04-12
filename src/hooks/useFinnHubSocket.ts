@@ -7,7 +7,7 @@ export function useFinnhubSocket(
 ) {
   const socketRef = useRef<WebSocket | null>(null);
   const subscribedSymbols = useRef<Set<string>>(new Set());
-  const reconnectTimeout = useRef<number | null>(null);
+  const reconnectTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const connectSocket = () => {
     const token = import.meta.env.VITE_FINNHUB_API_KEY;

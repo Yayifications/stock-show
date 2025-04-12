@@ -29,7 +29,12 @@ const StockCard: React.FC<StockCardProps> = ({
     <div
       className={`rounded p-4 shadow text-white w-full max-w-sm mx-auto transition-colors duration-300 ${bgColor}`}
     >
-      <h2 className="text-xl font-semibold">{symbol}</h2>
+      <h2
+        data-testid={`stock-title-${symbol}`}
+        className="text-xl font-semibold"
+      >
+        {symbol}
+      </h2>
       <p className="text-lg">Price: ${price.toFixed(2)}</p>
       <p className="text-sm">
         {alertPrice === 0
