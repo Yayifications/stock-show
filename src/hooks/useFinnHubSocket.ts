@@ -15,15 +15,12 @@ export function useFinnhubSocket(
 
     const socket = new WebSocket(`wss://ws.finnhub.io?token=${token}`);
     socketRef.current = socket;
-    console.log("🧪 WebSocket creado");
 
     socket.addEventListener("open", () => {
-      console.log("✅ WebSocket abierto");
       symbols.forEach((symbol) => {
         if (!subscribedSymbols.current.has(symbol)) {
           socket.send(JSON.stringify({ type: "subscribe", symbol }));
           subscribedSymbols.current.add(symbol);
-          console.log(`📡 Subscribing to ${symbol}`);
         }
       });
     });
@@ -35,12 +32,15 @@ export function useFinnhubSocket(
           onData(trade.s, trade.p, trade.t);
         });
       } else if (data.type === "ping") {
-        console.log("📡 Ping recibido");
       }
     });
 
     socket.addEventListener("error", (event) => {
-      console.error("❌ WebSocket error", event);
+      console.error("❌ WebSocket error:", event);
+      if (reconnectTimeout.current) {
+        clearTimeout(reconnectTimeout.current);
+      }
+      reconnectTimeout.current = setTimeout(connectSocket, 5000);
     });
 
     socket.addEventListener("close", () => {
@@ -72,11 +72,9 @@ export function useFinnhubSocket(
       if (!subscribedSymbols.current.has(symbol)) {
         socket.send(JSON.stringify({ type: "subscribe", symbol }));
         subscribedSymbols.current.add(symbol);
-        console.log(`📡 Subscribing to ${symbol}`);
       }
     });
 
-    // Unsubscribe de símbolos que ya no están
     subscribedSymbols.current.forEach((symbol) => {
       if (!symbols.includes(symbol)) {
         socket.send(JSON.stringify({ type: "unsubscribe", symbol }));

@@ -14,7 +14,7 @@ interface StockChartProps {
   symbol: string;
 }
 
-const StockChart: React.FC<StockChartProps> = ({ dataSet, symbol }) => {
+const StockChart: React.FC<StockChartProps> = ({ dataSet }) => {
   const formattedData = dataSet.map((point) => ({
     time: new Date(point.time).toLocaleTimeString([], {
       hour: "2-digit",
