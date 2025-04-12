@@ -7,15 +7,19 @@ interface FormProps {
 
 const Form: React.FC<FormProps> = ({ symbols, onAdd }) => {
   const [selected, setSelected] = useState(symbols[0] ?? "");
-  const [alert, setAlert] = useState<number>(0);
+  const [alert, setAlert] = useState<string>("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!selected || !alert) return;
+    const parsed = parseFloat(alert);
+    if (!selected || isNaN(parsed) || parsed <= 0) {
+      console.warn("⚠️ Invalid alert price");
+      return;
+    }
 
-    onAdd(selected, Number(alert));
-    setAlert(0);
+    onAdd(selected, parsed);
+    setAlert(""); // limpiar el input
   };
 
   return (
@@ -44,11 +48,10 @@ const Form: React.FC<FormProps> = ({ symbols, onAdd }) => {
         </label>
         <input
           id="alert"
-          type="number"
+          type="text"
+          inputMode="decimal"
           value={alert}
-          onChange={(e) =>
-            setAlert(e.target.value ? Number(e.target.value) : 0)
-          }
+          onChange={(e) => setAlert(e.target.value)}
           placeholder="e.g. 150.00"
           className="w-full border rounded p-2 text-sm"
         />
