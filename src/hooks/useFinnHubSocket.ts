@@ -1,73 +1,88 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useRef } from "react";
 import { Trade } from "../types/stock";
 
 export function useFinnhubSocket(
   symbols: string[],
   onData: (symbol: string, price: number, timestamp: number) => void
 ) {
-  const stableSymbols = useMemo(() => symbols, [symbols]);
+  const socketRef = useRef<WebSocket | null>(null);
+  const subscribedSymbols = useRef<Set<string>>(new Set());
+  const reconnectTimeout = useRef<number | null>(null);
 
-  useEffect(() => {
+  const connectSocket = () => {
     const token = import.meta.env.VITE_FINNHUB_API_KEY;
-
-    if (!token) {
-      console.error("❌ Finnhub API key is missing.");
-      return;
-    }
+    if (!token) return console.error("❌ Finnhub API key is missing");
 
     const socket = new WebSocket(`wss://ws.finnhub.io?token=${token}`);
+    socketRef.current = socket;
     console.log("🧪 WebSocket creado");
 
-    const handleOpen = () => {
+    socket.addEventListener("open", () => {
       console.log("✅ WebSocket abierto");
-      stableSymbols.forEach((symbol) => {
-        console.log(`📡 Suscribiéndose a ${symbol}`);
-        socket.send(JSON.stringify({ type: "subscribe", symbol }));
+      symbols.forEach((symbol) => {
+        if (!subscribedSymbols.current.has(symbol)) {
+          socket.send(JSON.stringify({ type: "subscribe", symbol }));
+          subscribedSymbols.current.add(symbol);
+          console.log(`📡 Subscribing to ${symbol}`);
+        }
       });
-    };
+    });
 
-    const handleMessage = (event: MessageEvent) => {
+    socket.addEventListener("message", (event) => {
       const data = JSON.parse(event.data);
-      console.log("📨 Mensaje recibido:", data);
-
       if (data.type === "trade") {
         (data.data as Trade[]).forEach((trade) => {
-          console.log(`📊 ${trade.s}: $${trade.p}`);
           onData(trade.s, trade.p, trade.t);
         });
       } else if (data.type === "ping") {
-        console.log("📡 Ping recibido (conexión viva)");
+        console.log("📡 Ping recibido");
       }
-    };
+    });
 
-    const handleError = (event: Event) => {
-      console.error("❌ WebSocket error:", event);
-    };
+    socket.addEventListener("error", (event) => {
+      console.error("❌ WebSocket error", event);
+    });
 
-    socket.addEventListener("open", handleOpen);
-    socket.addEventListener("message", handleMessage);
-    socket.addEventListener("error", handleError);
+    socket.addEventListener("close", () => {
+      console.warn("🔌 WebSocket cerrado, reintentando en 5s...");
+      subscribedSymbols.current.clear();
+      reconnectTimeout.current = setTimeout(connectSocket, 5000);
+    });
+  };
+
+  useEffect(() => {
+    if (
+      !socketRef.current ||
+      socketRef.current.readyState === WebSocket.CLOSED
+    ) {
+      connectSocket();
+    }
 
     return () => {
-      socket.removeEventListener("open", handleOpen);
-      socket.removeEventListener("message", handleMessage);
-      socket.removeEventListener("error", handleError);
-
-      if (socket.readyState === WebSocket.OPEN) {
-        stableSymbols.forEach((symbol) => {
-          socket.send(JSON.stringify({ type: "unsubscribe", symbol }));
-        });
-        socket.close();
-        console.log("🛑 WebSocket cerrado (OPEN)");
-      } else if (socket.readyState === WebSocket.CONNECTING) {
-        socket.addEventListener("open", () => {
-          stableSymbols.forEach((symbol) => {
-            socket.send(JSON.stringify({ type: "unsubscribe", symbol }));
-          });
-          socket.close();
-          console.log("🛑 WebSocket cerrado tras conectar");
-        });
-      }
+      reconnectTimeout.current && clearTimeout(reconnectTimeout.current);
+      socketRef.current?.close();
     };
-  }, [stableSymbols, onData]);
+  }, []);
+
+  useEffect(() => {
+    const socket = socketRef.current;
+    if (!socket || socket.readyState !== WebSocket.OPEN) return;
+
+    symbols.forEach((symbol) => {
+      if (!subscribedSymbols.current.has(symbol)) {
+        socket.send(JSON.stringify({ type: "subscribe", symbol }));
+        subscribedSymbols.current.add(symbol);
+        console.log(`📡 Subscribing to ${symbol}`);
+      }
+    });
+
+    // Unsubscribe de símbolos que ya no están
+    subscribedSymbols.current.forEach((symbol) => {
+      if (!symbols.includes(symbol)) {
+        socket.send(JSON.stringify({ type: "unsubscribe", symbol }));
+        subscribedSymbols.current.delete(symbol);
+        console.log(`🛑 Unsubscribed from ${symbol}`);
+      }
+    });
+  }, [symbols, onData]);
 }
