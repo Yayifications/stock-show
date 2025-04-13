@@ -14,9 +14,9 @@ A React + Tailwind + Vite app for tracking stock prices in real time using the F
 
 ---
 
-## Preview
+## Demo
 
-> _(Optional: Add a screenshot or GIF demo here)_
+[![Watch the demo](https://img.youtube.com/vi/_nOYJ39_Ac0/hqdefault.jpg)](https://youtu.be/_nOYJ39_Ac0)
 
 ---
 
